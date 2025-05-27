@@ -98,6 +98,7 @@ curl http://localhost:8080/health
 
 ### 🐍 Local Python Development
 
+**Linux/macOS:**
 ```bash
 # 1. Clone and setup
 git clone https://github.com/rows/rows_vision.git
@@ -106,12 +107,45 @@ chmod +x setup.sh && ./setup.sh
 
 # 2. Create virtual environment
 python3.11 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+source venv/bin/activate
 
 # 3. Install dependencies and run
 pip install -r requirements.txt
 nano .env  # Add API keys
 python main.py
+```
+
+**Windows (PowerShell):**
+```powershell
+# 1. Clone repository
+git clone https://github.com/rows/rows_vision.git
+cd rows_vision
+
+# 2. Create required package files
+New-Item -ItemType File -Path "src\__init__.py" -Force
+New-Item -ItemType File -Path "prompts\__init__.py" -Force
+
+# 3. Copy environment template
+Copy-Item ".env.example" ".env"
+
+# 4. Edit .env file with your API keys
+notepad .env
+
+# 5. Create and activate virtual environment
+python -m venv venv
+venv\Scripts\Activate.ps1
+
+# 6. Install dependencies and run
+pip install -r requirements.txt
+python main.py
+```
+
+**Windows (Git Bash - Alternative):**
+```bash
+# If you have Git Bash installed, you can use the Linux/macOS commands:
+chmod +x setup.sh
+./setup.sh
+# Then follow the Linux/macOS steps above
 ```
 
 **Why Docker?** | Docker | Local Python
@@ -300,6 +334,7 @@ docker stats rows-vision-api
 ```
 rows_vision/
 ├── src/                     # Source code
+│   ├── main.py             # Flask application
 │   ├── config.py           # Configuration
 │   ├── image_analyzer.py   # Data extraction
 │   ├── image_classifier.py # Image classification
