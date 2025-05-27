@@ -1,13 +1,7 @@
-import matplotlib.pyplot as plt
-import numpy as np
-from skimage.filters import frangi
-from PIL import Image, ImageFont, ImageDraw
-from collections import defaultdict
 import json
 import re
-from skimage.morphology import skeletonize
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 

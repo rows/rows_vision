@@ -45,7 +45,7 @@ image_type: 1 – Line Chart (Single Line)
 - Compare each point with its neighbors for consistency.
 
 JSON Format:
-{
+"data": {
   "xAxis": { "title": "" },
   "yAxis": { "title": [""] },
   "dataPoints": [
@@ -61,7 +61,7 @@ image_type: 2 – Line Chart (Multiple Lines)
 - Add a Y series for each line.
 
 JSON Format:
-{
+"data": {
   "xAxis": { "title": "" },
   "yAxis": { "series": ["", ...] },
   "dataPoints": [
@@ -76,7 +76,7 @@ image_type: 3 – Bar/Column Chart
 - Use color to separate grouped or stacked bars.
 
 JSON Format:
-{
+"data": {
   "xAxis": { "title": "" },
   "yAxis": { "series": ["", ...] },
   "dataPoints": [
@@ -92,7 +92,7 @@ image_type: 4 – Scatter Plot
 - Add a label column if points are categorized.
 
 JSON Format:
-{
+"data": {
   "xAxis": { "title": "" },
   "yAxis": { "series": ["", ..., "label"] },
   "dataPoints": [
@@ -108,7 +108,7 @@ image_type: 5 – Pie/Doughnut Chart
 - Do not use sampled_axis; always set to 0.
 
 JSON Format:
-{
+"data": {
   "xAxis": { "title": "Segment" },
   "yAxis": { "series": ["Value"] },
   "dataPoints": [
@@ -122,7 +122,7 @@ image_type: 6 – Table
 - Include column headers if available. If not fallback to defaults.
 
 JSON Format:
-{
+"data": {
   "chart_1": {
     "xAxis": { "title": "" },
     "yAxis": { "series": ["", ...] },
@@ -141,7 +141,7 @@ image_type: 7 – Receipt or Invoice
 - Use "Items" as the xAxis title if no other is available.
 
 JSON Format:
-{
+"data": {
   "chart_1": {
     "xAxis": { "title": "Items" },
     "yAxis": { "series": ["", ...] },
@@ -158,7 +158,7 @@ image_type: 8 – Infographics or Other with Tabular Data
 - Follow the same extraction process as for image_type 6.
 
 JSON Format:
-{
+"data": {
   "chart_1": {
     "xAxis": { "title": "" },
     "yAxis": { "series": ["", ...] },

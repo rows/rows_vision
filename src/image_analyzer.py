@@ -359,7 +359,6 @@ class ImageAnalyzer:
                 title_array = [data['xAxis']['title']]
             else:
                 title_array = ['X']
-            
             # Handle y-axis series/titles
             if 'series' in data.get('yAxis', {}):
                 series = data['yAxis']['series']
@@ -368,12 +367,13 @@ class ImageAnalyzer:
                     title_array.extend(series[1:])
                 elif len(series) >= 1:
                     # Use first series name for additional columns
-                    for _ in range(n_points_series - 1):
-                        title_array.append(series[0])
-                else:
-                    # Fallback to series names
                     for a in range(min(len(series), n_points_series - 1)):
                         title_array.append(series[a])
+                else:
+                    # Fallback to series names
+                    for _ in range(n_points_series - 1):
+                        title_array.append(series[0])
+                    
                         
             elif 'title' in data.get('yAxis', {}):
                 titles = data['yAxis']['title']
@@ -410,5 +410,5 @@ class ImageAnalyzer:
                 final_results.append(row)
 
             results_list.append(final_results)
-
+            
         return results_list

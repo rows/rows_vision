@@ -95,17 +95,21 @@ class RowsVision:
                 logger.warning("No data extracted from image")
                 return []
             
-            # Convert to JSON format
+            # Convert to JSON format (simpler version)
             headers = result_final[0][0]
             logger.debug("Extracted headers: %s", headers)
+
+            json_output = []
+            for row in result_final[0][1:]:
+                row_dict = OrderedDict()
+                for col_idx in range(len(headers)):
+                    header = headers[col_idx] if col_idx < len(headers) else f"col_{col_idx}"
+                    value = row[col_idx] if col_idx < len(row) else None
+                    row_dict[str(header)] = value
+                json_output.append(row_dict)
             
-            json_output = [
-                OrderedDict((headers[col_idx], row[col_idx] if col_idx < len(row) else None) 
-                          for col_idx in range(len(headers)))
-                for row in result_final[0][1:]
-            ]
-            
-            logger.debug("Final JSON output: %s", json.dumps(json_output, indent=2))
+            # Fixed: Use ensure_ascii=False to preserve special characters
+            logger.debug("Final JSON output: %s", json.dumps(json_output, indent=2, ensure_ascii=False))
             logger.info(f"Successfully processed {filename} and extracted {len(json_output)} rows")
             return json_output
             
@@ -130,6 +134,7 @@ class RowsVision:
         """
         try:
             first_chart = next(iter(image_type.values()))
+            logger.info(first_chart)
             chart_data = first_chart.get("data", {})
             
             # Check if classification included data extraction

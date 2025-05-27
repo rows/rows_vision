@@ -102,6 +102,8 @@ class ImageClassifier:
                     }
                 ]
             )
+            logger.info('Claude classification response: %s', message.content[0].text)
+            
             return message.content[0].text
 
         elif model == SupportedModels.GROQ:

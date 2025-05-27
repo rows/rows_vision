@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 import os
 import sys
 import logging
@@ -10,13 +10,15 @@ from time import time
 from io import BytesIO
 from src.logging_config import setup_logging
 from src.config import AppConfig
+import json
+
 
 load_dotenv()
 setup_logging()
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
-
+app.config['JSON_AS_ASCII'] = False
 # Validate required environment variables
 required_env_vars = ['API_KEY_ANTHROPIC', 'API_KEY_OPENAI', 'API_KEY_GEMINI', 'API_KEY_GROQ']
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
@@ -85,15 +87,31 @@ def run_external_api():
             start_time = time()
             result = rows_vision.run_image_json(file_extension, filename, file_stream, model_classification, model_extraction)
             total_time = round(time() - start_time, 3)
-            return jsonify({
+            
+            response_data = {
                 "result": result,
                 "metrics": {
                     "total_time": total_time
                 }
-            })
+            }
+            
+            # Use Response with ensure_ascii=False
+            return Response(
+                response=json.dumps(response_data, ensure_ascii=False),
+                status=200,
+                mimetype='application/json; charset=utf-8'
+            )
         else:
             result = rows_vision.run_image_json(file_extension, filename, file_stream, model_classification, model_extraction)
-            return jsonify({"result": result})
+            
+            response_data = {"result": result}
+            
+            # Use Response with ensure_ascii=False
+            return Response(
+                response=json.dumps(response_data, ensure_ascii=False),
+                status=200,
+                mimetype='application/json; charset=utf-8'
+            )
 
     except Exception as e:
         logger.error(f"Unexpected error in run_external_api: {str(e)}")
@@ -160,15 +178,31 @@ def run_external_api_file():
             start_time = time()
             result = rows_vision.run_image_json(file_extension, filename, file_stream, model_classification, model_extraction)
             total_time = round(time() - start_time, 3)
-            return jsonify({
+            
+            response_data = {
                 "result": result,
                 "metrics": {
                     "total_time": total_time
                 }
-            })
+            }
+            
+            # Use Response with ensure_ascii=False
+            return Response(
+                response=json.dumps(response_data, ensure_ascii=False),
+                status=200,
+                mimetype='application/json; charset=utf-8'
+            )
         else:
             result = rows_vision.run_image_json(file_extension, filename, file_stream, model_classification, model_extraction)
-            return jsonify({"result": result})
+            
+            response_data = {"result": result}
+            
+            # Use Response with ensure_ascii=False
+            return Response(
+                response=json.dumps(response_data, ensure_ascii=False),
+                status=200,
+                mimetype='application/json; charset=utf-8'
+            )
 
     except Exception as e:
         logger.error(f"Unexpected error in run_external_api_file: {str(e)}")
