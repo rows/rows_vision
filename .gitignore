@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.log
+
+# Environment
+.env
+venv/
+.Python
+
+# VSCode
+.vscode/
+.settings/
+
+# OS Files
+.DS_Store
+
+# test files
+ChartQA-main/
+
+predictions/
+
+summary_by_model.json
+
+testing/

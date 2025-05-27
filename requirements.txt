@@ -1,0 +1,40 @@
+# Web framework
+flask>=2.3.0
+werkzeug>=2.3.0
+
+# AI/ML APIs
+anthropic>=0.25.0
+openai>=1.12.0
+google-generativeai>=0.4.0
+groq>=0.4.0
+
+# Core image processing
+pillow>=10.0.0
+scikit-image==0.21.0
+matplotlib==3.7.5
+numpy==1.24.4
+
+# Extended image format support
+pyheif>=0.7.1
+pillow-heif>=0.13.0
+
+# PDF processing (optional - currently disabled)
+pymupdf>=1.23.0
+pdfminer.six>=20221105
+
+# Data processing
+pandas==2.0.3
+scikit-learn>=1.3.0
+
+# HTTP and utilities
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# Development and testing (optional)
+pytest>=7.4.0
+pytest-cov>=4.1.0
+black>=23.7.0
+flake8>=6.0.0
+
+# Production deployment
+gunicorn>=21.2.0

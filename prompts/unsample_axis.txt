@@ -1,0 +1,28 @@
+You will be given an image with one or more charts. Your task is to analyze the x-axis of each chart and infer any missing values. Some labels on the x-axis may be hidden, even though there are data points present for those positions.
+
+Carefully examine the x-axis of the chart. Pay attention to the following:
+1. The visible labels on the x-axis
+2. The spacing between the visible labels
+3. Any patterns in the labeling (e.g., increments of 5, 10, etc.)
+4. The total number of data points or bars in the chart
+
+Based on your observations, infer the values for the hidden labels on the x-axis. Consider the following steps:
+1. Identify the interval between visible labels
+2. Count the number of data points or bars between labeled positions
+3. Use the identified pattern to fill in the missing values
+
+Create a comprehensive list of all x-axis values, including both the visible and inferred hidden values. The list should be in order from left to right as they appear on the x-axis.
+
+Provide your answer in a json with the following format:
+{ 
+"chart_1":
+    { 
+    "x_axis_values": [value1, value2, value3, ...] 
+    },
+"chart_2": 
+    {
+    ...
+    }, ...
+}
+Ensure that your list includes all values, is comma-separated, and is enclosed in square brackets. Do not include any additional explanation or commentary outside the json structure.
+Repeat this for each one of the charts in the image. If the axis is not sampled, return an empty array for that one. The charts that have sampled axes are the following (True if it has sampling, False if not), the order is the order by which the charts appear in the image (left to right, top to bottom): 

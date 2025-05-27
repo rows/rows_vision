@@ -1,0 +1,21 @@
+Analyze this image and classify the charts/tables/figures into one of this classes and return a json with the answer and this structure {"chart_1":{ "image_type": 0, "sampled_axis": 0, "has_data_labels": 0}, "chart_2": {} ...}:
+    image_type options:
+    1 - Line chart with only one line;
+    2 - Line chart with more than one line;
+    3 - Bar chart;
+    4 - Scatter plot;
+    5 - Pie/doughnut chart;
+    6 - Table;
+    7 - Receipt;
+    8 - Not a chart but data can be extracted to a table format;
+
+    sampled_axis options:
+    1 - Chart has sampling in the independent axis (only available for image_type 1, 2, 3 and 4).
+    2 - Chart does not have sampling in the independent axis (if image_type is 5, 6, 7 or 8, you should always pick this option).
+
+    has_data_labels options:
+    1 - Chart has numerical data labels (values or coordinates) in every data point and across every data series OR is a table/receipt OR data is explicit in the image.
+    2 - Chart does NOT have numerical data labels (values or coordinates) in every data point and across every data series.
+
+Repeat this for every chart/table/figure in the image. Ignore illustrative figures, that are just for decoration.
+Remember, please return ONLY a valid JSON object and nothing else. Do not include explanations, markdown, or extra text.
