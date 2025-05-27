@@ -77,7 +77,7 @@ Upload the URL of chart screenshot and receive a structured JSON like:
 
 ```bash
 # 1. Clone and setup
-git clone https://github.com/yourname/rows_vision.git
+git clone https://github.com/rows/rows_vision.git
 cd rows_vision
 
 # 2. Run setup script
@@ -100,7 +100,7 @@ curl http://localhost:8080/health
 
 ```bash
 # 1. Clone and setup
-git clone https://github.com/yourname/rows_vision.git
+git clone https://github.com/rows/rows_vision.git
 cd rows_vision
 chmod +x setup.sh && ./setup.sh
 
