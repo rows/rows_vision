@@ -121,21 +121,17 @@ python main.py
 git clone https://github.com/rows/rows_vision.git
 cd rows_vision
 
-# 2. Create required package files
-New-Item -ItemType File -Path "src\__init__.py" -Force
-New-Item -ItemType File -Path "prompts\__init__.py" -Force
-
-# 3. Copy environment template
+# 2. Copy environment template
 Copy-Item ".env.example" ".env"
 
-# 4. Edit .env file with your API keys
+# 3. Edit .env file with your API keys
 notepad .env
 
-# 5. Create and activate virtual environment
+# 4. Create and activate virtual environment
 python -m venv venv
 venv\Scripts\Activate.ps1
 
-# 6. Install dependencies and run
+# 5. Install dependencies and run
 pip install -r requirements.txt
 python main.py
 ```
