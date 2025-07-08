@@ -87,7 +87,7 @@ class ImageAnalyzer:
         }
 
         payload_x = {
-            "model": self.openai_model,
+            "model": 'gpt-4o',
             "messages": [
                 {
                     "role": "user",
@@ -232,7 +232,8 @@ class ImageAnalyzer:
             return response.text
 
         elif model == SupportedModels.OPENAI:
-            logger.debug('Using OpenAI model for analysis')
+            logger.info('Using OpenAI model for analysis')
+            logger.info(prompt)
             response = self.client_openai.chat.completions.create(
                 model=self.openai_model,
                 messages=[
@@ -249,8 +250,9 @@ class ImageAnalyzer:
                         ]
                     }
                 ],
-                max_tokens=4000
+                max_completion_tokens=8000
             )
+            logger.info(response.choices[0].message.content)
             return response.choices[0].message.content
 
         else:
@@ -342,7 +344,7 @@ class ImageAnalyzer:
             List of compiled results, where each element represents a chart's data
         """
         results_list = []
-        
+
         for chart in base_data:
             data = base_data[chart]
             final_results = []

@@ -22,12 +22,14 @@ A list of data points, each containing the x and corresponding value
 
 JSON Format:
 {
-  "xAxis": { "title": "" },
-  "yAxis": { "title": [""] },
-  "dataPoints": [
-    { "x_value": "", "y_value_1": 0 },
-    ...
-  ]
+  "chart_1": {
+    "xAxis": { "title": "" },
+    "yAxis": { "title": [""] },
+    "dataPoints": [
+      { "x_value": "", "y_value_1": 0 },
+      ...
+    ]
+  }  
 }
 
 Recap: Return ONLY valid JSON, no extra text, no markdown, etc.

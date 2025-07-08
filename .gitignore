@@ -28,3 +28,9 @@ predictions/
 summary_by_model.json
 
 testing/
+
+testes/
+
+results/
+
+prompts/image_classification.txt

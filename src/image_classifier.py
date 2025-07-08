@@ -9,7 +9,9 @@ from typing import Dict, Any, Tuple, List
 
 from anthropic import Anthropic
 from groq import Groq
-import google.generativeai as genai
+#import google.generativeai as genai
+from google import genai
+from google.genai import types
 import openai
 from PIL import Image as PILImage
 
@@ -132,9 +134,17 @@ class ImageClassifier:
         elif model == SupportedModels.GOOGLE:
             image_bytes = base64.b64decode(encoded_image)
             image = PILImage.open(BytesIO(image_bytes))
-            genai.configure(api_key=self.api_key_gemini)
-            gemini_model = genai.GenerativeModel(self.gemini_model)
-            response = gemini_model.generate_content([prompt, image])
+            client = genai.Client(
+                api_key=self.api_key_gemini
+            )
+            gemini_model = self.gemini_model
+            generate_content_config = types.GenerateContentConfig(
+                thinking_config = types.ThinkingConfig(
+                    thinking_budget=0,
+                ),
+                response_mime_type="text/plain",
+            )
+            response = client.models.generate_content(model = gemini_model, contents = [prompt, image], config = generate_content_config)
             return response.text
 
         elif model == SupportedModels.OPENAI:
@@ -155,7 +165,7 @@ class ImageClassifier:
                         ]
                     }
                 ],
-                max_tokens=4000
+                max_completion_tokens=8000
             )
             return response.choices[0].message.content
 

@@ -33,7 +33,7 @@ class RowsVision:
         self.config = ModelConfig()
 
     def run_image_json(self, file_extension: str, filename: str, file_stream: BytesIO, 
-                      model_classification: str, model_extraction: str) -> List[Dict[str, Any]]:
+                      model_classification: str, model_extraction: str, skip_step = False) -> List[Dict[str, Any]]:
         """
         Process image file and return extracted data as JSON.
         
@@ -72,7 +72,7 @@ class RowsVision:
             
             # Check if we can use direct data extraction (for tables with labels)
             result_final = None
-            if self._can_use_direct_extraction(image_type):
+            if self._can_use_direct_extraction(image_type) or skip_step:
                 logger.info("Using direct data extraction from classification")
                 # Move nested data up one level for processing
                 for chart in image_type.values():
@@ -82,7 +82,7 @@ class RowsVision:
                 result_final = self.analyzer.compile_results(image_type)
             else:
                 # Use full analysis pipeline
-                logger.info("Using full analysis pipeline")
+                logger.info("Using full analysis pipeline with model: " + model_extraction)
                 result = self.analyzer.analyze_graph(image_type, file_stream, file_type, model_extraction)
                 
                 if 'error' in result:

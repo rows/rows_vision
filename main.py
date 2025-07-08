@@ -208,6 +208,96 @@ def run_external_api_file():
         logger.error(f"Unexpected error in run_external_api_file: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
+@app.route('/api/run-one-shot', methods=['POST'])
+def run_external_api_one_shot():
+    """
+    Process image from URL or local file path using AI models.
+    
+    Expected JSON payload:
+    {
+        "image_url": "https://example.com/image.jpg",  # OR
+        "file_path": "/path/to/local/image.jpg",       # OR
+        "model_classification": "anthropic",           # optional
+        "model_extraction": "anthropic",              # optional
+        "time_outputs": false                         # optional
+    }
+    """
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'error': 'Missing JSON payload'}), 400
+
+        # Get optional parameters with defaults
+        model_classification = data.get('model_classification', 'anthropic')
+        model_extraction = data.get('model_extraction', 'anthropic')
+        time_outputs = data.get('time_outputs', False)
+
+        # Validate model names
+        valid_models = ['anthropic', 'openai', 'google', 'groq']
+        if model_classification not in valid_models:
+            return jsonify({'error': f'Invalid model_classification. Must be one of: {valid_models}'}), 400
+        if model_extraction not in valid_models:
+            return jsonify({'error': f'Invalid model_extraction. Must be one of: {valid_models}'}), 400
+
+        image_url = data.get('image_url')
+        file_path = data.get('file_path')
+
+        if not image_url and not file_path:
+            return jsonify({'error': 'Missing image_url or file_path parameter'}), 400
+
+        if image_url and file_path:
+            return jsonify({'error': 'Provide either image_url or file_path, not both'}), 400
+
+        try:
+            if image_url:
+                if not image_url.startswith(('http://', 'https://')):
+                    return jsonify({'error': 'Invalid image URL - must start with http:// or https://'}), 400
+                file_extension, filename, file_stream = rows_vision.download_image_from_url(image_url)
+            elif file_path:
+                if not os.path.exists(file_path):
+                    return jsonify({'error': f'File not found: {file_path}'}), 400
+                file_extension = os.path.splitext(file_path)[1].lstrip(".")
+                filename = os.path.basename(file_path)
+                with open(file_path, "rb") as f:
+                    file_stream = BytesIO(f.read())
+        except Exception as e:
+            logger.error(f"Failed to load image: {str(e)}")
+            return jsonify({'error': f'Failed to load image: {str(e)}'}), 400
+
+        if time_outputs:
+            start_time = time()
+            result = rows_vision.run_image_json(file_extension, filename, file_stream, model_classification, model_extraction, skip_step=True)
+            total_time = round(time() - start_time, 3)
+            
+            response_data = {
+                "result": result,
+                "metrics": {
+                    "total_time": total_time
+                }
+            }
+            
+            # Use Response with ensure_ascii=False
+            return Response(
+                response=json.dumps(response_data, ensure_ascii=False),
+                status=200,
+                mimetype='application/json; charset=utf-8'
+            )
+        else:
+            result = rows_vision.run_image_json(file_extension, filename, file_stream, model_classification, model_extraction)
+            
+            response_data = {"result": result}
+            
+            # Use Response with ensure_ascii=False
+            return Response(
+                response=json.dumps(response_data, ensure_ascii=False),
+                status=200,
+                mimetype='application/json; charset=utf-8'
+            )
+
+    except Exception as e:
+        logger.error(f"Unexpected error in run_external_api_file: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+   
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint for monitoring and Docker."""

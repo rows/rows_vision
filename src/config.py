@@ -11,9 +11,9 @@ class ModelConfig:
     
     # Model versions
     anthropic_model: str = "claude-3-7-sonnet-20250219"
-    openai_model: str = "gpt-4o"
-    gemini_model: str = "gemini-2.0-flash"
-    groq_model: str = "meta-llama/llama-4-scout-17b-16e-instruct"
+    openai_model: str = "o4-mini"
+    gemini_model: str = "gemini-2.5-flash-preview-05-20"
+    groq_model: str = "meta-llama/llama-4-maverick-17b-128e-instruct"
     
     # Request settings
     max_tokens: int = 8000
