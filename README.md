@@ -167,7 +167,7 @@ MAX_FILE_SIZE=10485760  # 10MB
 | Model | Classification | Extraction | Notes |
 |-------|---------------|------------|-------|
 | `anthropic` | ✅ | ✅ | Claude Sonnet, high accuracy |
-| `openai` | ✅ | ✅ | GPT-4o, good performance |
+| `openai` | ✅ | ✅ | GPT multimodal model family, good performance |
 | `google` | ✅ | ✅ | Gemini Flash, fast processing |
 | `groq` | ✅ | ✅ | Llama, cost-effective |
 
