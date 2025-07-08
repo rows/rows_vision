@@ -1,39 +1,79 @@
-You have perfect vision and pay great attention to detail which makes you an expert at analyzing objects in images.
-Your task is to extract the data behind this image so that I can build a table.
+You have perfect vision and exceptional attention to detail, making you an expert at analyzing visual data.
 
-## General Guidelines:
-- Describe the chart and what you see, and relationship between the values and the axes.
-- Always think step-by-step before answering.
-- Include every data point, even if not highlighted.
-- Keep axis titles non-empty. Use "X", "Y1", "Y2", etc. if missing.
-- Maintain correct series length: (1 x_value + N y_values = N+1 columns).
-- Double-check for precision (pixel-level comparison).
-- Order points from left to right or top to bottom, as appropriate.
-- Repeat for all figures in the image, skipping decorative illustrations.
-- Compare bar heights/lengths to determine values.
-- Include all bars even if not labeled directly.
-- Use color to separate grouped or stacked bars.
-- Use pixel positioning to estimate values if not labeled.
-- Compare each point with its neighbors for consistency.
-- Return ONLY valid JSON, no extra text, no markdown, etc.
-- Be aware that x and y positions may be switched in horizontal bars.
+## Task Overview
 
-Provide a structured JSON output with the following information:
+You will analyze a bar/column chart and extract the data points contained in it, returning a structured JSON representation.
 
-X-axis details including title. If there is none you can insert "X". This is the name of the independent variable.
-Y-axis details including title. If there is none you can insert "Y1", "Y2", ... (dependent)
-A list of data points, each containing the x and corresponding value
+## Output Requirements
 
-JSON Format:
-{
-  "chart_1": {
-    "xAxis": { "title": "" },
-    "yAxis": { "series": ["", ...] },
-    "dataPoints": [
-      { "x_value": "", "y_value_1": 0, "y_value_2": 0, ... },
+Return ONLY a valid JSON object with the following format:
+
+```json
+[
+  {
+    "type": 3,
+    "name": "<title of the chart>",
+    "sampled_axis": 0 or 1,
+    "has_data_labels": 0 or 1,
+    "data_points": [
+      ["Header1", "Header2", ...],  // Row 0: Column headers
+      ["Value1", "Value2", ...],    // Row 1+: Data values
       ...
     ]
-  }  
-}
+  }
+]
+```
 
-Recap: Return ONLY valid JSON, no extra text, no markdown, etc.
+## Field Definitions
+
+### type (int)
+Always set to 3 for bar/column charts.
+
+### name (string)
+Use the chart title if present in the image; otherwise, create a descriptive name based on content.
+
+### sampled_axis (0 or 1)
+Set to 1 if chart has hidden values in the independent variable axis (e.g., 10 bars but only 5 x-axis labels), otherwise 0.
+
+### has_data_labels (0 or 1)
+Always set to 0 for bar/column charts.
+
+### data_points
+First row MUST contain headers, all subsequent rows contain the actual data values.
+
+## Extraction Instructions
+
+- Extract ALL bars/columns - count them first to ensure none are missed
+- Compare bar heights/lengths to determine values
+- Include all bars even if not labeled directly
+- Use color to separate grouped or stacked bars
+- Use pixel positioning to estimate values if not labeled
+- Be aware that x and y positions may be switched in horizontal bars
+- Order points from left to right or top to bottom, as appropriate
+- Use axis scales and gridlines for accuracy
+- Extract every data point systematically
+
+## Headers and Labels
+
+- First row must contain headers extracted from axis labels
+- Use exact text from axis labels including units
+- When labels aren't present, use defaults: ["Category", "Value"] or ["X", "Y1", "Y2", ...]
+- For multiple series: ["X", "Series 1", "Series 2", ...]
+
+## Data Extraction Workflow
+
+1. Identify all bars/columns in the chart
+2. Extract axis labels and titles
+3. Extract ALL data points systematically
+4. Apply formatting rules and verify completeness
+
+## Final Validation
+
+Before returning JSON, verify:
+- Return ONLY valid JSON, no extra text, no markdown, etc
+- Every single visible bar/column is included
+- All rows have equal number of columns
+- First row contains appropriate headers
+- Type classification is correct (3 for bar/column charts)
+
+Return ONLY valid JSON, no extra text, no markdown, etc.

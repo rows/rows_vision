@@ -305,6 +305,24 @@ class ImageAnalyzer:
         Returns:
             Dictionary containing analysis results for all charts
         """
+        logger.info(f"analyze_graph called with image_info type: {type(image_info)}")
+        logger.info(f"analyze_graph image_info: {image_info}")
+        
+        # Convert new format to old format for processing
+        if 'type' in image_info and 'data_points' in image_info:
+            logger.info("Converting new single chart format to old format for analysis")
+            # Convert single chart new format to old nested format
+            converted_info = {
+                "chart_1": {
+                    "image_type": image_info["type"],
+                    "sampled_axis": image_info.get("sampled_axis", 0),
+                    "has_data_labels": image_info.get("has_data_labels", 0),
+                    "name": image_info.get("name", "Chart")
+                }
+            }
+            image_info = converted_info
+            logger.info(f"Converted to old format: {image_info}")
+        
         image_stream.seek(0)
         encoded_image = base64.b64encode(image_stream.read()).decode('utf-8')
         image_stream.seek(0)
@@ -315,6 +333,7 @@ class ImageAnalyzer:
                 '''
 
         x_axis_values = self.get_all_values_axis(image_info, image_stream)
+        logger.info(f"x_axis_values: {x_axis_values}")
 
         for i, chart in enumerate(x_axis_values):
             prompt += f'Chart {i+1}:\n'
@@ -336,6 +355,7 @@ class ImageAnalyzer:
     def compile_results(self, base_data: Dict[str, Any]) -> List[List[List]]:
         """
         Compile analysis results into a structured format for output.
+        All prompts now use the new format with data_points array.
         
         Args:
             base_data: Dictionary containing chart analysis results
@@ -343,74 +363,46 @@ class ImageAnalyzer:
         Returns:
             List of compiled results, where each element represents a chart's data
         """
+        logger.info(f"compile_results called with type: {type(base_data)}")
+        logger.info(f"compile_results data: {base_data}")
+        
         results_list = []
 
-        for chart in base_data:
-            data = base_data[chart]
-            final_results = []
+        # Check if this is the new format from classification_with_instructions prompt
+        if isinstance(base_data, list) and len(base_data) > 0 and 'data_points' in base_data[0]:
+            logger.info("Processing new format from classification_with_instructions prompt")
+            for i, chart_data in enumerate(base_data):
+                logger.info(f"Processing chart {i}: {chart_data}")
+                if 'data_points' in chart_data and chart_data['data_points']:
+                    logger.info(f"Adding data_points for chart {i}: {chart_data['data_points']}")
+                    results_list.append(chart_data['data_points'])
+                else:
+                    logger.info(f"No data_points found for chart {i}, adding empty list")
+                    results_list.append([])
+            logger.info(f"Returning results_list: {results_list}")
+            return results_list
 
-            if 'dataPoints' not in data or not data['dataPoints']:
-                logger.warning(f"No dataPoints found in chart {chart}")
-                results_list.append([])
+        # Handle new format from type-specific prompts
+        logger.info("Processing new format from type-specific prompts")
+        for chart in base_data:
+            logger.info(f"Processing chart: {chart}")
+            data = base_data[chart]
+            logger.info(f"Chart data type: {type(data)}, content: {data}")
+            
+            # Check if this is the new format (array response)
+            if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict) and 'data_points' in data[0]:
+                logger.info(f"Chart {chart} is in new array format")
+                if data[0]['data_points']:
+                    logger.info(f"Adding data_points for chart {chart}: {data[0]['data_points']}")
+                    results_list.append(data[0]['data_points'])
+                else:
+                    logger.info(f"Empty data_points for chart {chart}")
+                    results_list.append([])
                 continue
 
-            n_points_series = len(data['dataPoints'][0]) if data['dataPoints'] else 0
+            # If it's not in new format, it might be an error or unexpected format
+            logger.warning(f"Unexpected format for chart {chart}: {type(data)}")
+            results_list.append([])
             
-            # Handle x-axis title
-            if 'title' in data.get('xAxis', {}):
-                title_array = [data['xAxis']['title']]
-            else:
-                title_array = ['X']
-            # Handle y-axis series/titles
-            if 'series' in data.get('yAxis', {}):
-                series = data['yAxis']['series']
-                if len(series) == n_points_series:
-                    title_array[0] = series[0]
-                    title_array.extend(series[1:])
-                elif len(series) >= 1:
-                    # Use first series name for additional columns
-                    for a in range(min(len(series), n_points_series - 1)):
-                        title_array.append(series[a])
-                else:
-                    # Fallback to series names
-                    for _ in range(n_points_series - 1):
-                        title_array.append(series[0])
-                    
-                        
-            elif 'title' in data.get('yAxis', {}):
-                titles = data['yAxis']['title']
-                if isinstance(titles, list):
-                    if len(titles) == n_points_series:
-                        title_array[0] = titles[0]
-                        title_array.extend(titles[1:])
-                    elif len(titles) >= 1:
-                        for _ in range(n_points_series - 1):
-                            title_array.append(titles[0])
-                    else:
-                        for a in range(min(len(titles), n_points_series - 1)):
-                            title_array.append(titles[a])
-                else:
-                    # Single title string
-                    for _ in range(n_points_series - 1):
-                        title_array.append(titles)
-            else: 
-                # No y-axis information, use default
-                for _ in range(n_points_series - 1):
-                    title_array.append('Values')
-
-            # Ensure title_array has correct length
-            while len(title_array) < n_points_series:
-                title_array.append('Values')
-                
-            final_results.append(title_array)
-
-            # Add data points
-            for data_point in data['dataPoints']:
-                row = []
-                for key, value in data_point.items():
-                    row.append(value)
-                final_results.append(row)
-
-            results_list.append(final_results)
-            
+        logger.info(f"Final results_list: {results_list}")
         return results_list

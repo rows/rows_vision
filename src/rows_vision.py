@@ -66,20 +66,42 @@ class RowsVision:
             logger.info(f"Classifying image: {filename}")
             image_type = self.classifier.classify_chart_image(file_stream, file_type, model_classification)
             
-            if 'error' in image_type:
+            logger.info(f"Classification result type: {type(image_type)}")
+            logger.info(f"Classification result: {image_type}")
+            
+            if isinstance(image_type, dict) and 'error' in image_type:
                 logger.error(f"Classification failed: {image_type['error']}")
+                return []
+            elif isinstance(image_type, list) and len(image_type) > 0 and isinstance(image_type[0], dict) and 'error' in image_type[0]:
+                logger.error(f"Classification failed: {image_type[0]['error']}")
                 return []
             
             # Check if we can use direct data extraction (for tables with labels)
             result_final = None
-            if self._can_use_direct_extraction(image_type) or skip_step:
+            logger.info(f"Checking if can use direct extraction for image_type: {type(image_type)}")
+            can_extract = self._can_use_direct_extraction(image_type)
+            logger.info(f"Can use direct extraction: {can_extract}, skip_step: {skip_step}")
+            
+            if can_extract or skip_step:
                 logger.info("Using direct data extraction from classification")
-                # Move nested data up one level for processing
-                for chart in image_type.values():
-                    if "data" in chart:
-                        chart.update(chart["data"])  # Move xAxis, yAxis, dataPoints up
-                        del chart["data"]            # Remove the nested data key
-                result_final = self.analyzer.compile_results(image_type)
+                
+                # Handle new list format from classification_with_instructions
+                if isinstance(image_type, list):
+                    logger.info("Processing list format for direct extraction")
+                    result_final = self.analyzer.compile_results(image_type)
+                elif isinstance(image_type, dict) and 'type' in image_type and 'data_points' in image_type:
+                    logger.info("Processing new dict format (single chart) for direct extraction")
+                    # Convert single chart dict to list format for compile_results
+                    result_final = self.analyzer.compile_results([image_type])
+                else:
+                    logger.info("Processing old dict format for direct extraction")
+                    # Handle old dictionary format (fallback)
+                    # Move nested data up one level for processing
+                    for chart in image_type.values():
+                        if "data" in chart:
+                            chart.update(chart["data"])  # Move xAxis, yAxis, dataPoints up
+                            del chart["data"]            # Remove the nested data key
+                    result_final = self.analyzer.compile_results(image_type)
             else:
                 # Use full analysis pipeline
                 logger.info("Using full analysis pipeline with model: " + model_extraction)
@@ -91,11 +113,26 @@ class RowsVision:
                     
                 result_final = self.analyzer.compile_results(result)
             
+            logger.info(f"result_final type: {type(result_final)}")
+            logger.info(f"result_final content: {result_final}")
+            
             if not result_final or not result_final[0]:
                 logger.warning("No data extracted from image")
                 return []
             
+            # Validate result structure
+            logger.info(f"Validating result_final: type={type(result_final)}, len={len(result_final) if result_final else 'None'}")
+            if not isinstance(result_final, list) or len(result_final) == 0:
+                logger.warning("Invalid result_final structure")
+                return []
+            
+            logger.info(f"result_final[0] type: {type(result_final[0])}, len={len(result_final[0]) if result_final[0] else 'None'}")
+            if not isinstance(result_final[0], list) or len(result_final[0]) == 0:
+                logger.warning("Invalid result_final[0] structure")
+                return []
+            
             # Convert to JSON format (simpler version)
+            logger.info(f"About to extract headers from result_final[0][0]: {result_final[0][0]}")
             headers = result_final[0][0]
             logger.debug("Extracted headers: %s", headers)
 
@@ -122,30 +159,78 @@ class RowsVision:
                 file_stream.close()
                 logger.debug("File stream closed")
 
-    def _can_use_direct_extraction(self, image_type: Dict[str, Any]) -> bool:
+    def _can_use_direct_extraction(self, image_type) -> bool:
         """
         Determine if we can use direct extraction from classification results.
         
         Args:
-            image_type: Classification results
+            image_type: Classification results (can be dict or list)
             
         Returns:
             True if direct extraction is possible, False otherwise
         """
         try:
-            first_chart = next(iter(image_type.values()))
-            logger.info(first_chart)
-            chart_data = first_chart.get("data", {})
+            logger.info(f"_can_use_direct_extraction called with type: {type(image_type)}")
+            logger.info(f"_can_use_direct_extraction data: {image_type}")
             
-            # Check if classification included data extraction
-            has_x_axis = 'xAxis' in chart_data
-            chart_type = first_chart.get("image_type")
-            has_data_labels = first_chart.get("has_data_labels") == 1
+            # Handle new list format from classification_with_instructions
+            if isinstance(image_type, list) and len(image_type) > 0:
+                logger.info("Processing list format in _can_use_direct_extraction")
+                first_chart = image_type[0]
+                logger.info(f"First chart: {first_chart}")
+                chart_type = first_chart.get("type")
+                has_data_labels = first_chart.get("has_data_labels") == 1
+                has_data_points = 'data_points' in first_chart and first_chart['data_points']
+                
+                logger.info(f"Chart type: {chart_type}, has_data_labels: {has_data_labels}, has_data_points: {has_data_points}")
+                
+                # Tables, receipts, infographics, and charts with data labels can use direct extraction
+                result = has_data_points and (chart_type in {6, 7, 8} or has_data_labels)
+                logger.info(f"Direct extraction result for list: {result}")
+                return result
             
-            # Tables, receipts, and charts with data labels can use direct extraction
-            return has_x_axis and (chart_type in {6, 7, 8} or has_data_labels)
+            # Handle dictionary format (could be new format or old format)
+            elif isinstance(image_type, dict):
+                logger.info("Processing dict format in _can_use_direct_extraction")
+                
+                # Check if this is the new format (single chart dict with direct fields)
+                if 'type' in image_type and 'data_points' in image_type:
+                    logger.info("Dict is in new format (single chart)")
+                    chart_type = image_type.get("type")
+                    has_data_labels = image_type.get("has_data_labels") == 1
+                    has_data_points = 'data_points' in image_type and image_type['data_points']
+                    
+                    logger.info(f"Chart type (new dict): {chart_type}, has_data_labels: {has_data_labels}, has_data_points: {has_data_points}")
+                    
+                    # Tables, receipts, infographics, and charts with data labels can use direct extraction
+                    result = has_data_points and (chart_type in {6, 7, 8} or has_data_labels)
+                    logger.info(f"Direct extraction result for new dict: {result}")
+                    return result
+                
+                # Handle old dictionary format (nested charts)
+                else:
+                    logger.info("Dict is in old format (nested charts)")
+                    first_chart = next(iter(image_type.values()))
+                    logger.info(f"First chart (old dict): {first_chart}")
+                    chart_data = first_chart.get("data", {})
+                    
+                    # Check if classification included data extraction
+                    has_x_axis = 'xAxis' in chart_data
+                    chart_type = first_chart.get("image_type")
+                    has_data_labels = first_chart.get("has_data_labels") == 1
+                    
+                    logger.info(f"Chart type (old dict): {chart_type}, has_data_labels: {has_data_labels}, has_x_axis: {has_x_axis}")
+                    
+                    # Tables, receipts, and charts with data labels can use direct extraction
+                    result = has_x_axis and (chart_type in {6, 7, 8} or has_data_labels)
+                    logger.info(f"Direct extraction result for old dict: {result}")
+                    return result
             
-        except (StopIteration, KeyError, AttributeError):
+            logger.info("Unknown format, returning False")
+            return False
+            
+        except (StopIteration, KeyError, AttributeError, TypeError) as e:
+            logger.error(f"Error in _can_use_direct_extraction: {str(e)}")
             return False
 
     def download_image_from_url(self, image_url: str) -> Tuple[str, str, BytesIO]:

@@ -39,8 +39,8 @@ class ImageClassifier:
         """
         self.anthropic = Anthropic(api_key=api_key)
         self.client_openai = openai.OpenAI(api_key=api_key_openai)
-        self.prompt = load_prompt('image_classification_final')
-        self.prompt_groq = load_prompt('image_classification_final')
+        self.prompt = load_prompt('classification_with_instructions')
+        self.prompt_groq = load_prompt('classification_with_instructions')
         
         self.anthropic_pdf = Anthropic(
             api_key=api_key, 
@@ -84,14 +84,11 @@ class ImageClassifier:
             message = self.anthropic.messages.create(
                 model=self.anthropic_model,
                 max_tokens=self.max_tokens,
+                system=prompt,
                 messages=[
                     {
                         "role": "user",
                         "content": [
-                            {
-                                "type": "text",
-                                "text": prompt
-                            },
                             {
                                 "type": "image",
                                 "source": {
@@ -114,9 +111,12 @@ class ImageClassifier:
             chat_completion = client.chat.completions.create(
                 messages=[
                     {
+                        "role": "system",
+                        "content": prompt
+                    },
+                    {
                         "role": "user",
                         "content": [
-                            {"type": "text", "text": self.prompt_groq},
                             {
                                 "type": "image_url",
                                 "image_url": {
@@ -143,8 +143,9 @@ class ImageClassifier:
                     thinking_budget=0,
                 ),
                 response_mime_type="text/plain",
+                system_instruction=prompt
             )
-            response = client.models.generate_content(model = gemini_model, contents = [prompt, image], config = generate_content_config)
+            response = client.models.generate_content(model = gemini_model, contents = [image], config = generate_content_config)
             return response.text
 
         elif model == SupportedModels.OPENAI:
@@ -153,9 +154,12 @@ class ImageClassifier:
                 model=self.openai_model,
                 messages=[
                     {
+                        "role": "system",
+                        "content": prompt
+                    },
+                    {
                         "role": "user",
                         "content": [
-                            {"type": "text", "text": prompt},
                             {
                                 "type": "image_url",
                                 "image_url": {
@@ -209,6 +213,180 @@ class ImageClassifier:
                     logger.error(f"All {max_retries} classification attempts failed")
                     return {"error": f"Failed after {max_retries} attempts: {str(e)}"}
                 time.sleep(2 ** attempt)  # Exponential backoff
+
+    def classify_with_instructions(self, image_stream: BytesIO, file_type: str, instructions: str, model: str) -> Dict[str, Any]:
+        """
+        Classify and extract data from image with custom instructions using system/user message structure.
+        
+        Args:
+            image_stream: Image data as BytesIO stream
+            file_type: MIME type of the image
+            instructions: Custom instructions for extraction
+            model: AI model to use ('google' or 'openai')
+        
+        Returns:
+            Dictionary containing classification and extraction results
+            
+        Raises:
+            ValueError: If model is not supported
+        """
+        # Validate model support
+        if model not in [SupportedModels.GOOGLE, SupportedModels.OPENAI, SupportedModels.ANTHROPIC]:
+            raise ValueError(f"Model '{model}' not supported for instructions endpoint. Supported models: ['google', 'openai', 'anthropic']")
+        
+        image_stream.seek(0)
+        encoded_image = base64.b64encode(image_stream.read()).decode('utf-8')
+        image_stream.seek(0)
+        
+        # Load system prompt
+        system_prompt = load_prompt('classification_with_instructions')
+        
+        # Handle empty instructions - pass only image
+        if not instructions or instructions.strip() == "":
+            instructions = ""
+        
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                if model == SupportedModels.GOOGLE:
+                    response = self._classify_with_instructions_gemini(encoded_image, file_type, system_prompt, instructions)
+                elif model == SupportedModels.OPENAI:
+                    response = self._classify_with_instructions_openai(encoded_image, file_type, system_prompt, instructions)
+                elif model == SupportedModels.ANTHROPIC:
+                    response = self._classify_with_instructions_anthropic(encoded_image, file_type, system_prompt, instructions)
+                
+                logger.debug('Classification with instructions response: %s', response)
+                
+                # Try to parse the response as JSON
+                try:
+                    return json.loads(response)
+                except json.JSONDecodeError:
+                    return extract_json_from_text(response)
+                    
+            except Exception as e:
+                logger.warning(f"Classification with instructions attempt {attempt + 1} failed: {str(e)}")
+                if attempt == max_retries - 1:
+                    logger.error(f"All {max_retries} classification with instructions attempts failed")
+                    return {"error": f"Failed after {max_retries} attempts: {str(e)}"}
+                time.sleep(2 ** attempt)  # Exponential backoff
+
+    def _classify_with_instructions_gemini(self, encoded_image: str, file_type: str, system_prompt: str, instructions: str) -> str:
+        """
+        Classify with instructions using Gemini model with system/user message structure.
+        """
+        image_bytes = base64.b64decode(encoded_image)
+        image = PILImage.open(BytesIO(image_bytes))
+        
+        client = genai.Client(api_key=self.api_key_gemini)
+        gemini_model = self.gemini_model
+        
+        generate_content_config = types.GenerateContentConfig(
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+            response_mime_type="text/plain",
+            system_instruction=system_prompt
+        )
+        
+        # If instructions are empty, pass only image
+        if instructions.strip() == "":
+            contents = [image]
+        else:
+            contents = [instructions, image]
+        
+        response = client.models.generate_content(
+            model=gemini_model,
+            contents=contents,
+            config=generate_content_config
+        )
+        
+        return response.text
+
+    def _classify_with_instructions_openai(self, encoded_image: str, file_type: str, system_prompt: str, instructions: str) -> str:
+        """
+        Classify with instructions using OpenAI model with system/user message structure.
+        """
+        # Build user content - if instructions are empty, pass only image
+        if instructions.strip() == "":
+            user_content = [
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:{file_type};base64,{encoded_image}",
+                    },
+                }
+            ]
+        else:
+            user_content = [
+                {"type": "text", "text": instructions},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:{file_type};base64,{encoded_image}",
+                    },
+                },
+            ]
+        
+        response = self.client_openai.chat.completions.create(
+            model=self.openai_model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": system_prompt
+                },
+                {
+                    "role": "user",
+                    "content": user_content
+                }
+            ],
+            max_completion_tokens=8000
+        )
+        
+        return response.choices[0].message.content
+
+    def _classify_with_instructions_anthropic(self, encoded_image: str, file_type: str, system_prompt: str, instructions: str) -> str:
+        """
+        Classify with instructions using Anthropic model with system/user message structure.
+        """
+        # Build user content - if instructions are empty, pass only image
+        if instructions.strip() == "":
+            user_content = [
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": file_type,
+                        "data": encoded_image
+                    }
+                }
+            ]
+        else:
+            user_content = [
+                {
+                    "type": "text",
+                    "text": instructions
+                },
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": file_type,
+                        "data": encoded_image
+                    }
+                }
+            ]
+        
+        message = self.anthropic.messages.create(
+            model=self.anthropic_model,
+            max_tokens=self.max_tokens,
+            system=system_prompt,
+            messages=[
+                {
+                    "role": "user",
+                    "content": user_content
+                }
+            ]
+        )
+        
+        return message.content[0].text
 
     def check_file_extension(self, filename: str) -> Tuple[bool, str]:
         """

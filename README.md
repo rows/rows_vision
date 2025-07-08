@@ -41,30 +41,12 @@ Upload the URL of chart screenshot and receive a structured JSON like:
 ```json
 {
     "result": [
-        {
-            "X": 130,
-            "Y": "2000"
-        },
-        {
-            "X": 90,
-            "Y": "2005"
-        },
-        {
-            "X": 30,
-            "Y": "2010"
-        },
-        {
-            "X": 25,
-            "Y": "2015"
-        },
-        {
-            "X": 60,
-            "Y": "2020"
-        },
-        {
-            "X": 110,
-            "Y": "2025"
-        }
+        ["Model", "Model Size (parameters)", "LiveCodeBench Pass@1 (%)"],
+        ["DeepCoder(ours)", "16B", 60.8],
+        ["o3-mini (low)", "N/A", 61.2],
+        ["o1", "N/A", 59.5],
+        ["R1-Distilled-32B", "32B", 57.2],
+        ["R1-Distilled-14B", "14B", 53.0]
     ]
 }
 ```
@@ -193,9 +175,20 @@ MAX_FILE_SIZE=10485760  # 10MB
 
 ## 🔌 API Endpoints
 
+**🎯 Unified Output Format:** All endpoints return data in the same format - an array where the first row contains headers and subsequent rows contain data values.
+
+**🚀 Endpoint Comparison:**
+
+| Endpoint | Use Case | Speed | Features |
+|----------|----------|-------|----------|
+| `/api/run` | General purpose | Medium | Two-step analysis, dual models |
+| `/api/run-file` | Local files | Medium | Same as run + local file support |
+| `/api/run-one-shot` | Tables/receipts | Fastest | Direct extraction, single step |
+| `/api/classify-with-instructions` | Custom extraction | Fast | Custom instructions, single model |
+
 ### `POST /api/run`
 
-Process an image from a URL.
+Process an image from a URL using two-step analysis (classification + extraction).
 
 **Request:**
 ```bash
@@ -229,7 +222,10 @@ print(response.json())
 ```json
 {
   "result": [
-    {"Month": "January", "Sales": 1000, "Profit": 200}
+    ["Month", "Sales", "Profit"],
+    ["January", 1000, 200],
+    ["February", 1200, 300],
+    ["March", 950, 180]
   ],
   "metrics": {
     "total_time": 2.345
@@ -239,17 +235,143 @@ print(response.json())
 
 ### `POST /api/run-file`
 
-Process an image from URL or local file path.
+Process an image from URL or local file path. Same as `/api/run` but supports local files.
 
+**Request:**
 ```json
 {
   "image_url": "https://example.com/chart.png",
   // OR
   "file_path": "/path/to/local/image.jpg",
   "model_classification": "anthropic",
-  "model_extraction": "anthropic"
+  "model_extraction": "anthropic",
+  "time_outputs": false
 }
 ```
+
+**Response:** Same format as `/api/run` endpoint.
+
+### `POST /api/run-one-shot`
+
+Process an image with direct data extraction (skips secondary analysis). Fastest option for tables, receipts, and charts with clear data labels.
+
+**Request:**
+```bash
+curl -X POST 'http://localhost:8080/api/run-one-shot' \
+--header 'Content-Type: application/json' \
+--data '{
+  "image_url": "https://example.com/table.png",
+  "model_classification": "google",
+  "model_extraction": "google",
+  "time_outputs": true
+}'
+```
+
+**Features:**
+- **Fastest Processing**: Skips secondary analysis pipeline
+- **Direct Extraction**: Uses classification results directly
+- **Best For**: Tables, receipts, and charts with clear labels
+- **Same Format**: Returns same output format as other endpoints
+
+**Response:**
+```json
+{
+  "result": [
+    ["Product", "Price", "Stock"],
+    ["Laptop", "$999", "25"],
+    ["Mouse", "$29", "150"],
+    ["Keyboard", "$79", "80"]
+  ],
+  "metrics": {
+    "total_time": 1.8
+  }
+}
+```
+
+### `POST /api/classify-with-instructions`
+
+Process an image with custom instructions using a single AI model. This endpoint combines classification and extraction in one step using system/user message structure.
+
+**Request:**
+```bash
+curl -X POST 'http://localhost:8080/api/classify-with-instructions' \
+--header 'Content-Type: application/json' \
+--data '{
+  "image_url": "https://example.com/chart.png",
+  "instructions": "Extract only the revenue data from this chart, focusing on Q1-Q4 values",
+  "model": "google",
+  "time_outputs": true
+}'
+```
+
+**Python Example:**
+```python
+import requests
+
+url = "http://localhost:8080/api/classify-with-instructions"
+payload = {
+    "image_url": "https://example.com/chart.png",
+    "instructions": "Extract only the revenue data from this chart, focusing on Q1-Q4 values",
+    "model": "google",  # or "openai", "anthropic"
+    "time_outputs": True,
+    "include_name": False  # optional - set to True to include chart name
+}
+
+response = requests.post(url, json=payload)
+print(response.json())
+```
+
+**Request Parameters:**
+- `image_url` (required): URL of the image to process
+- `file_path` (alternative): Local file path (use instead of image_url)
+- `instructions` (optional): Custom instructions for data extraction (if empty, passes only image)
+- `model` (required): AI model to use (`google`, `openai`, or `anthropic`)
+- `time_outputs` (optional): Include timing metrics in response
+- `include_name` (optional): Include chart name in response (default: false)
+
+**Response (default format - data points only):**
+```json
+{
+  "result": [
+    ["Quarter", "Revenue"],
+    ["Q1", "150000"],
+    ["Q2", "180000"],
+    ["Q3", "220000"],
+    ["Q4", "280000"]
+  ],
+  "metrics": {
+    "total_time": 3.2
+  }
+}
+```
+
+**Response (with include_name=true):**
+```json
+{
+  "result": {
+    "name": "Revenue Chart Q1-Q4",
+    "data_points": [
+      ["Quarter", "Revenue"],
+      ["Q1", "150000"],
+      ["Q2", "180000"],
+      ["Q3", "220000"],
+      ["Q4", "280000"]
+    ]
+  },
+  "metrics": {
+    "total_time": 3.2
+  }
+}
+```
+
+**Key Features:**
+- **Single Model Processing**: No ensemble, direct results
+- **Custom Instructions**: Tailor extraction to specific needs (optional)
+- **System/User Prompts**: Uses advanced prompt structure
+- **Supported Models**: Google Gemini, OpenAI, and Anthropic Claude
+- **Combined Operation**: Classification and extraction in one call
+- **Simplified Output**: Returns data points array directly (optional name parameter)
+- **Flexible Input**: Works with or without custom instructions
 
 ---
 
@@ -347,7 +469,7 @@ rows_vision/
 
 ## 🚧 To-Do
 
-- Support user prompt for finer operations
+- ~~Support user prompt for finer operations~~ ✅ **Done**
 - ~~Improve error handling~~ ✅ **Done**
 - ~~Docker deployment~~ ✅ **Done** 
 - ~~Production-ready logging~~ ✅ **Done**
@@ -377,6 +499,43 @@ docker run -it --env-file .env -e DEBUG=true rows-vision
 ```bash
 # Use different port
 docker run -d -p 8081:8080 --env-file .env rows-vision
+```
+
+---
+
+## 📄 Research Paper
+
+This work is based on research studying multimodal large language models for visual data extraction from charts and tables. 
+
+**📖 Paper**: [Rows Vision: Multimodal Large Language Models for Visual Data Extraction](./paper/RowsVision_WhitePaper.pdf) *(White Paper)*
+
+<!-- Once uploaded to arXiv, replace with:
+**📖 Paper**: [Rows Vision: Multimodal Large Language Models for Visual Data Extraction](https://arxiv.org/abs/XXXX.XXXXX) *(arXiv preprint)*
+-->
+
+**🎯 Citation**:
+```bibtex
+@techreport{samagaio2025rowsvision,
+  title={Rows Vision: Multimodal Large Language Models for Visual Data Extraction},
+  author={Samagaio, {\'A}lvaro Mendes and Cruz, Henrique},
+  institution={Rows.com},
+  address={Porto, Portugal},
+  year={2025},
+  type={White Paper},
+  note={Available at: \url{https://github.com/rows/rows_vision/blob/main/paper/RowsVision_WhitePaper.pdf}}
+}
+```
+
+**For arXiv submission (when ready):**
+```bibtex
+@misc{samagaio2025rowsvision,
+  title={Rows Vision: Multimodal Large Language Models for Visual Data Extraction},
+  author={Samagaio, {\'A}lvaro Mendes and Cruz, Henrique},
+  year={2025},
+  eprint={XXXX.XXXXX},
+  archivePrefix={arXiv},
+  primaryClass={cs.CV}
+}
 ```
 
 ---

@@ -1,39 +1,81 @@
-You have perfect vision and pay great attention to detail which makes you an expert at analyzing objects in images.
-Your task is to extract the data behind this image.
+You have perfect vision and exceptional attention to detail, making you an expert at analyzing visual data.
 
-## General Guidelines:
-- Always think step-by-step before answering.
-- Include every data point, even if not highlighted.
-- Keep axis titles non-empty. Use "X", "Y1", "Y2", etc. if missing.
-- Maintain correct series length: (1 x_value + N y_values = N+1 columns).
-- Double-check for precision (pixel-level comparison).
-- Order points from left to right or top to bottom, as appropriate.
-- Repeat for all figures in the image, skipping decorative illustrations.
-- Extract each point’s (x, y) coordinates precisely.
-- Include any labels if visible for each dot.
-- Use color to distinguish series if applicable.
-- Add a label column if points are categorized.
-- Use same X-axis across all series.
-- Use pixel positioning to estimate values if not labeled.
-- Compare each point with its neighbors for consistency.
-- Return ONLY valid JSON, no extra text, no markdown, etc.
+## Task Overview
 
-Provide a structured JSON output with the following information:
+You will analyze a scatter plot and extract the data points contained in it, returning a structured JSON representation.
 
-X-axis details including title. If there is none you can insert "X";
-Y-axis details including series and labels. If there is none you can insert "Y1", "Y2", ... If you find labels, include a 'label' series and datapoints for tha labels;
-A list of data points, each containing the x and corresponding value;
+## Output Requirements
 
-JSON Format:
-{
-  "chart_1": {
-    "xAxis": { "title": "" },
-    "yAxis": { "series": ["", ..., "label"] },
-    "dataPoints": [
-      { "x_value": "", "y_value_1": 0, ..., "label": "" },
+Return ONLY a valid JSON object with the following format:
+
+```json
+[
+  {
+    "type": 4,
+    "name": "<title of the chart>",
+    "sampled_axis": 0 or 1,
+    "has_data_labels": 0 or 1,
+    "data_points": [
+      ["Header1", "Header2", ...],  // Row 0: Column headers
+      ["Value1", "Value2", ...],    // Row 1+: Data values
       ...
     ]
   }
-}
+]
+```
 
-Recap: Return ONLY valid JSON, no extra text, no markdown, etc.
+## Field Definitions
+
+### type (int)
+Always set to 4 for scatter plots.
+
+### name (string)
+Use the chart title if present in the image; otherwise, create a descriptive name based on content.
+
+### sampled_axis (0 or 1)
+Always set to 0 for scatter plots.
+
+### has_data_labels (0 or 1)
+Always set to 0 for scatter plots.
+
+### data_points
+First row MUST contain headers, all subsequent rows contain the actual data values.
+
+## Extraction Instructions
+
+- Extract ALL points - count total points first to ensure completeness
+- Extract each point's (x, y) coordinates precisely
+- Include any labels if visible for each dot
+- Use color to distinguish series if applicable
+- Use pixel positioning to estimate values if not labeled
+- Compare each point with its neighbors for consistency
+- Use axis scales and gridlines for accuracy
+- Extract every data point systematically
+
+## Headers and Labels
+
+- First row must contain headers extracted from axis labels
+- Use exact text from axis labels including units
+- Data structure options:
+  - Unlabeled points: ["X", "Y"]
+  - Labeled points: ["X", "Y", "Label"]
+  - Multiple series: ["X", "Series1_Y", "Series2_Y", ...]
+
+## Data Extraction Workflow
+
+1. Identify all points in the scatter plot
+2. Extract axis labels and titles
+3. Extract each point's coordinates precisely
+4. Include any visible labels or series information
+5. Apply formatting rules and verify completeness
+
+## Final Validation
+
+Before returning JSON, verify:
+- Return ONLY valid JSON, no extra text, no markdown, etc
+- Every single point is included
+- All rows have equal number of columns
+- First row contains appropriate headers
+- Type classification is correct (4 for scatter plots)
+
+Return ONLY valid JSON, no extra text, no markdown, etc.
