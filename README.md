@@ -21,6 +21,43 @@
 
 ---
 
+## 📄 Research Paper
+
+This work is based on research studying multimodal large language models for visual data extraction from charts and tables. 
+
+**📖 Paper**: [Rows Vision: Multimodal Large Language Models for Visual Data Extraction](./paper/RowsVision_WhitePaper.pdf) *(White Paper)*
+
+<!-- Once uploaded to arXiv, replace with:
+**📖 Paper**: [Rows Vision: Multimodal Large Language Models for Visual Data Extraction](https://arxiv.org/abs/XXXX.XXXXX) *(arXiv preprint)*
+-->
+
+**🎯 Citation**:
+```bibtex
+@techreport{samagaio2025rowsvision,
+  title={Rows Vision: Multimodal Large Language Models for Visual Data Extraction},
+  author={Samagaio, {\'A}lvaro Mendes and Cruz, Henrique},
+  institution={Rows.com},
+  address={Porto, Portugal},
+  year={2025},
+  type={White Paper},
+  note={Available at: \url{https://github.com/rows/rows_vision/blob/main/paper/RowsVision_WhitePaper.pdf}}
+}
+```
+
+**For arXiv submission (when ready):**
+```bibtex
+@misc{samagaio2025rowsvision,
+  title={Rows Vision: Multimodal Large Language Models for Visual Data Extraction},
+  author={Samagaio, {\'A}lvaro Mendes and Cruz, Henrique},
+  year={2025},
+  eprint={XXXX.XXXXX},
+  archivePrefix={arXiv},
+  primaryClass={cs.CV}
+}
+```
+
+---
+
 ## 🚀 Features
 
 - **Multi-Model AI Support**: Choose from Anthropic Claude, OpenAI GPT-4, Google Gemini, or Groq models
@@ -499,43 +536,6 @@ docker run -it --env-file .env -e DEBUG=true rows-vision
 ```bash
 # Use different port
 docker run -d -p 8081:8080 --env-file .env rows-vision
-```
-
----
-
-## 📄 Research Paper
-
-This work is based on research studying multimodal large language models for visual data extraction from charts and tables. 
-
-**📖 Paper**: [Rows Vision: Multimodal Large Language Models for Visual Data Extraction](./paper/RowsVision_WhitePaper.pdf) *(White Paper)*
-
-<!-- Once uploaded to arXiv, replace with:
-**📖 Paper**: [Rows Vision: Multimodal Large Language Models for Visual Data Extraction](https://arxiv.org/abs/XXXX.XXXXX) *(arXiv preprint)*
--->
-
-**🎯 Citation**:
-```bibtex
-@techreport{samagaio2025rowsvision,
-  title={Rows Vision: Multimodal Large Language Models for Visual Data Extraction},
-  author={Samagaio, {\'A}lvaro Mendes and Cruz, Henrique},
-  institution={Rows.com},
-  address={Porto, Portugal},
-  year={2025},
-  type={White Paper},
-  note={Available at: \url{https://github.com/rows/rows_vision/blob/main/paper/RowsVision_WhitePaper.pdf}}
-}
-```
-
-**For arXiv submission (when ready):**
-```bibtex
-@misc{samagaio2025rowsvision,
-  title={Rows Vision: Multimodal Large Language Models for Visual Data Extraction},
-  author={Samagaio, {\'A}lvaro Mendes and Cruz, Henrique},
-  year={2025},
-  eprint={XXXX.XXXXX},
-  archivePrefix={arXiv},
-  primaryClass={cs.CV}
-}
 ```
 
 ---
