@@ -309,7 +309,20 @@ class ImageAnalyzer:
         logger.info(f"analyze_graph image_info: {image_info}")
         
         # Convert new format to old format for processing
-        if 'type' in image_info and 'data_points' in image_info:
+        if isinstance(image_info, list) and len(image_info) > 0 and isinstance(image_info[0], dict):
+            logger.info("Converting new list format to old format for analysis")
+            # Convert list of charts to old nested format
+            converted_info = {}
+            for i, chart in enumerate(image_info):
+                converted_info[f"chart_{i+1}"] = {
+                    "image_type": chart.get("type"),
+                    "sampled_axis": chart.get("sampled_axis", 0),
+                    "has_data_labels": chart.get("has_data_labels", 0),
+                    "name": chart.get("name", f"Chart {i+1}")
+                }
+            image_info = converted_info
+            logger.info(f"Converted list to old format: {image_info}")
+        elif isinstance(image_info, dict) and 'type' in image_info and 'data_points' in image_info:
             logger.info("Converting new single chart format to old format for analysis")
             # Convert single chart new format to old nested format
             converted_info = {
@@ -321,7 +334,7 @@ class ImageAnalyzer:
                 }
             }
             image_info = converted_info
-            logger.info(f"Converted to old format: {image_info}")
+            logger.info(f"Converted single dict to old format: {image_info}")
         
         image_stream.seek(0)
         encoded_image = base64.b64encode(image_stream.read()).decode('utf-8')
